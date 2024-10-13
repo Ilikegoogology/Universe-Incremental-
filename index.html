@@ -27,6 +27,13 @@
             padding: 10px 20px;
             font-size: 16px;
         }
+        nav {
+            margin-bottom: 20px;
+        }
+        nav button {
+            padding: 10px 15px;
+            margin-right: 10px;
+        }
         .hidden {
             display: none;
         }
@@ -35,20 +42,26 @@
 <body>
     <div id="game">
         <h1>Universe Incremental</h1>
-        <div>
+        <nav>
+            <button id="universeTabButton">Universes</button>
+            <button id="galaxyTabButton">Galaxies</button>
+        </nav>
+
+        <!-- Universes Tab -->
+        <div id="universeTab" class="tab active">
             <h2>Universes: <span id="universes">0</span></h2>
-            <h2>Galaxies: <span id="galaxies">0</span></h2>
             <button id="getUniverseButton">Get Universe</button>
         </div>
+
+        <!-- Galaxies Tab -->
         <div id="galaxyTab" class="tab">
-            <h2>Galaxies</h2>
+            <h2>Galaxies: <span id="galaxies">0</span></h2>
             <button id="buyGalaxyButton">Buy Galaxy (Cost: 3 Universes)</button>
             <div>
                 <h3>Galaxy Upgrade</h3>
-                <button id="upgradeGalaxyButton" class="hidden">Multiply Universes by Galaxies^Galaxies (Cost: 5 Universes and 2 Galaxies)</button>
+                <button id="upgradeGalaxyButton" class="hidden">Multiply Universes by (Galaxies^Galaxies)^-15 (Cost: 5 Universes and 2 Galaxies)</button>
             </div>
         </div>
-        <button id="toggleGalaxyTabButton">Toggle Galaxy Tab</button>
     </div>
 
     <script>
@@ -57,18 +70,22 @@
         let universePerTick = 0.01;
         let upgradeGalaxyCostUniverses = 5;
         let upgradeGalaxyCostGalaxies = 2;
+        let galaxyBoost = 1;
 
+        // Function to update the display
         function updateDisplay() {
             document.getElementById('universes').innerText = universes.toFixed(2);
             document.getElementById('galaxies').innerText = galaxies;
             document.getElementById('upgradeGalaxyButton').classList.toggle('hidden', universes < upgradeGalaxyCostUniverses || galaxies < upgradeGalaxyCostGalaxies);
         }
 
+        // Function to add Universes over time
         function getUniverses() {
-            universes += universePerTick;
+            universes += universePerTick * galaxyBoost;
             updateDisplay();
         }
 
+        // Function to buy a Galaxy
         function buyGalaxy() {
             if (universes >= 3) {
                 galaxies++;
@@ -77,29 +94,41 @@
             }
         }
 
+        // Function to upgrade Galaxies
         function upgradeGalaxies() {
             if (universes >= upgradeGalaxyCostUniverses && galaxies >= upgradeGalaxyCostGalaxies) {
                 universes -= upgradeGalaxyCostUniverses;
                 galaxies -= upgradeGalaxyCostGalaxies;
-                universePerTick *= Math.pow(galaxies, galaxies);
+
+                // The boost formula: (Galaxies^Galaxies)^-15
+                galaxyBoost *= Math.pow(Math.pow(galaxies, galaxies), -15);
                 updateDisplay();
             }
         }
 
+        // Tab functionality
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Event Listeners
         document.getElementById('getUniverseButton').addEventListener('click', getUniverses);
         document.getElementById('buyGalaxyButton').addEventListener('click', buyGalaxy);
         document.getElementById('upgradeGalaxyButton').addEventListener('click', upgradeGalaxies);
-        
-        document.getElementById('toggleGalaxyTabButton').addEventListener('click', function() {
-            const galaxyTab = document.getElementById('galaxyTab');
-            galaxyTab.classList.toggle('active');
-        });
 
+        document.getElementById('universeTabButton').addEventListener('click', () => switchTab('universeTab'));
+        document.getElementById('galaxyTabButton').addEventListener('click', () => switchTab('galaxyTab'));
+
+        // Auto-increment Universes over time
         setInterval(() => {
-            universes += universePerTick;
+            universes += universePerTick * galaxyBoost;
             updateDisplay();
         }, 10);
 
+        // Initial display update
         updateDisplay();
     </script>
 </body>
