@@ -1,169 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universe Incremental</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #282c34;
-            color: white;
-            padding: 20px;
-        }
-        #game {
-            max-width: 600px;
-            margin: auto;
-            text-align: center;
-        }
-        .tab {
-            display: none;
-        }
-        .tab.active {
-            display: block;
-        }
-        button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-        }
-        nav {
-            margin-bottom: 20px;
-        }
-        nav button {
-            padding: 10px 15px;
-            margin-right: 10px;
-        }
-        .hidden {
-            display: none;
-        }
-        .upgrade-button {
-            border: 2px solid red;
-        }
-        .upgrade-button.enabled {
-            border-color: red;
-            cursor: pointer;
-        }
-        .upgrade-button.disabled {
-            border-color: green;
-            background-color: #444;
-            cursor: not-allowed;
-        }
-    </style>
+<meta charset="UTF-8" />
+<title>Universe Incremental</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #0a0a20; color: #eee; text-align: center; margin-top: 50px; }
+  button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+  #log { margin-top: 20px; height: 100px; overflow-y: auto; background: #111; padding: 10px; border-radius: 5px; font-size: 14px; }
+</style>
 </head>
 <body>
-    <div id="game">
-        <h1>Universe Incremental</h1>
-        <nav>
-            <button id="universeTabButton">Universes</button>
-            <button id="galaxyTabButton">Galaxies</button>
-        </nav>
 
-        <!-- Universes Tab -->
-        <div id="universeTab" class="tab active">
-            <h2>Universes: <span id="universes">0</span></h2>
-            <button id="getUniverseButton">Get Universe</button>
-        </div>
+<h1>Universe Incremental</h1>
 
-        <!-- Galaxies Tab -->
-        <div id="galaxyTab" class="tab">
-            <h2>Galaxies: <span id="galaxies">0</span></h2>
-            <button id="buyGalaxyButton">Buy Galaxy (Cost: 3 Universes)</button>
-            <div>
-                <h3>Galaxy Upgrade</h3>
-                <button id="upgradeGalaxyButton" class="upgrade-button enabled">
-                    Multiply Universes by (Galaxies^Galaxies)^-15 (Cost: 5 Universes and 2 Galaxies)
-                </button>
-            </div>
-        </div>
-    </div>
+<div>
+  <div>Universes: <span id="universes">0</span></div>
+  <div>Universe Growth Speed: <span id="growthSpeed">1.00x</span></div>
+  <div>Universe Automation Speed: <span id="autoSpeed">1.00x</span></div>
+</div>
 
-    <script>
-        let universes = 0;
-        let galaxies = 0;
-        let universePerTick = 0.01;
-        let upgradeGalaxyCostUniverses = 5;
-        let upgradeGalaxyCostGalaxies = 2;
-        let galaxyBoost = 1;
-        let upgradePurchased = false;
+<button id="growUniverseBtn">Grow Universe (+1)</button>
+<br/>
 
-        // Function to update the display
-        function updateDisplay() {
-            document.getElementById('universes').innerText = universes.toFixed(2);
-            document.getElementById('galaxies').innerText = galaxies;
+<button id="upgradeGrowthman" disabled>Upgrade 1: Growthman (3 Universes) - Speed x1.25</button>
+<button id="upgradeUnbreaking" disabled>Upgrade 2: Unbreaking (6 Universes) - Boost Supernova Chance</button>
+<button id="triggerSupernova" disabled>Trigger Supernova Event</button>
 
-            const upgradeButton = document.getElementById('upgradeGalaxyButton');
+<div id="log"></div>
 
-            if (universes >= upgradeGalaxyCostUniverses && galaxies >= upgradeGalaxyCostGalaxies && !upgradePurchased) {
-                upgradeButton.classList.add('enabled');
-                upgradeButton.classList.remove('disabled');
-                upgradeButton.disabled = false;
-            } else if (upgradePurchased) {
-                upgradeButton.classList.remove('enabled');
-                upgradeButton.classList.add('disabled');
-                upgradeButton.disabled = true;
-            } else {
-                upgradeButton.classList.remove('enabled');
-                upgradeButton.classList.add('disabled');
-                upgradeButton.disabled = true;
-            }
-        }
+<script>
+  let universes = 0;
+  let growthSpeed = 1;
+  let autoSpeed = 1;
+  let growthmanBought = false;
+  let unbreakingBought = false;
+  let supernovaActive = false;
 
-        // Function to add Universes over time
-        function getUniverses() {
-            universes += universePerTick * galaxyBoost;
-            updateDisplay();
-        }
+  const universesSpan = document.getElementById('universes');
+  const growthSpeedSpan = document.getElementById('growthSpeed');
+  const autoSpeedSpan = document.getElementById('autoSpeed');
+  const growUniverseBtn = document.getElementById('growUniverseBtn');
+  const upgradeGrowthmanBtn = document.getElementById('upgradeGrowthman');
+  const upgradeUnbreakingBtn = document.getElementById('upgradeUnbreaking');
+  const triggerSupernovaBtn = document.getElementById('triggerSupernova');
+  const logDiv = document.getElementById('log');
 
-        // Function to buy a Galaxy
-        function buyGalaxy() {
-            if (universes >= 3) {
-                galaxies++;
-                universes -= 3;
-                updateDisplay();
-            }
-        }
+  function log(message) {
+    logDiv.innerHTML += message + '<br>';
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
 
-        // Function to upgrade Galaxies
-        function upgradeGalaxies() {
-            if (universes >= upgradeGalaxyCostUniverses && galaxies >= upgradeGalaxyCostGalaxies && !upgradePurchased) {
-                universes -= upgradeGalaxyCostUniverses;
-                galaxies -= upgradeGalaxyCostGalaxies;
+  function updateUI() {
+    universesSpan.innerText = universes.toFixed(2);
+    growthSpeedSpan.innerText = growthSpeed.toFixed(2) + 'x';
+    autoSpeedSpan.innerText = autoSpeed.toFixed(2) + 'x';
 
-                // The boost formula: (Galaxies^Galaxies)^-15
-                galaxyBoost *= Math.pow(Math.pow(galaxies, galaxies), -15);
+    upgradeGrowthmanBtn.disabled = universes < 3 || growthmanBought;
+    upgradeUnbreakingBtn.disabled = universes < 6 || unbreakingBought;
+    triggerSupernovaBtn.disabled = !supernovaActive;
+  }
 
-                // Disable the button and mark the upgrade as purchased
-                upgradePurchased = true;
-                updateDisplay();
-            }
-        }
+  growUniverseBtn.onclick = () => {
+    universes += 1 * growthSpeed;
+    log(`Universe grew by ${(1 * growthSpeed).toFixed(2)}!`);
+    checkUpgrades();
+    updateUI();
+  };
 
-        // Tab functionality
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.getElementById(tabId).classList.add('active');
-        }
+  upgradeGrowthmanBtn.onclick = () => {
+    if (universes >= 3) {
+      universes -= 3;
+      growthSpeed *= 1.25;
+      growthmanBought = true;
+      log('Upgrade 1: Growthman purchased! Universe growth speed increased by 25%.');
+      updateUI();
+    }
+  };
 
-        // Event Listeners
-        document.getElementById('getUniverseButton').addEventListener('click', getUniverses);
-        document.getElementById('buyGalaxyButton').addEventListener('click', buyGalaxy);
-        document.getElementById('upgradeGalaxyButton').addEventListener('click', upgradeGalaxies);
+  upgradeUnbreakingBtn.onclick = () => {
+    if (universes >= 6) {
+      universes -= 6;
+      unbreakingBought = true;
+      log('Upgrade 2: Unbreaking purchased! Supernova events are more likely.');
+      updateUI();
+    }
+  };
 
-        document.getElementById('universeTabButton').addEventListener('click', () => switchTab('universeTab'));
-        document.getElementById('galaxyTabButton').addEventListener('click', () => switchTab('galaxyTab'));
+  function checkUpgrades() {
+    if (unbreakingBought && !supernovaActive) {
+      // Increase chance supernova triggers automatically or enable manual trigger
+      // For demo, enable manual supernova trigger
+      supernovaActive = true;
+      log('Supernova event is now available! Click to trigger.');
+      updateUI();
+    }
+  }
 
-        // Auto-increment Universes over time
-        setInterval(() => {
-            universes += universePerTick * galaxyBoost;
-            updateDisplay();
-        }, 10);
+  triggerSupernovaBtn.onclick = () => {
+    if (!supernovaActive) return;
 
-        // Initial display update
-        updateDisplay();
-    </script>
+    log('*** SUPERNOVA EVENT TRIGGERED! ***');
+    growthSpeed *= 2;
+    autoSpeed *= 2;
+
+    // Supernova effect lasts 10 seconds
+    setTimeout(() => {
+      growthSpeed /= 2;
+      autoSpeed /= 2;
+      supernovaActive = false;
+      log('Supernova event ended.');
+      updateUI();
+    }, 10000);
+
+    updateUI();
+    triggerSupernovaBtn.disabled = true;
+  };
+
+  // Universe automation grows universes automatically every second scaled by autoSpeed
+  setInterval(() => {
+    universes += 0.1 * autoSpeed * growthSpeed;
+    checkUpgrades();
+    updateUI();
+  }, 1000);
+
+  updateUI();
+</script>
+
 </body>
 </html>
